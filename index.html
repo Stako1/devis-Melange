@@ -133,9 +133,31 @@ async function loadDB(){
     var r1=await supa.from("quotes").select("data");var r2=await supa.from("bc_list").select("data");var r3=await supa.from("bp_list").select("data");var r4=await supa.from("global_coms").select("data");var r5=await supa.from("clients").select("data");var r6=await supa.from("counters").select("*").eq("id","main").maybeSingle();
     if(r1.error)throw r1.error;
     function ex(r){return r&&r.data&&!r.error?r.data.map(function(x){return x.data;}):[]; }
-    quotes=ex(r1);bcList=ex(r2);bpList=ex(r3);globalComs=ex(r4);clients=ex(r5);
+    quotes=ex(r1);bcList=ex(r2);bpList=ex(r3);
+    var dbComs=ex(r4);
+    // If Supabase has no coms, keep existing globalComs (from localStorage)
+    if(dbComs&&dbComs.length>0)globalComs=dbComs;
+    // else keep whatever was loaded from localStorage
+    clients=ex(r5);
     if(r6.data){counter=r6.data.counter||1;bcCounter=r6.data.bc_counter||1;bpCounter=r6.data.bp_counter||1;clientCounter=r6.data.client_counter||1;try{comCounters=r6.data.com_counters?JSON.parse(r6.data.com_counters):{};}catch(x){comCounters={};}}
     supaReady=true;showSync("Synchronise","ok");render();
+    // Force rebuild filter bar after coms loaded
+    setTimeout(function(){
+      var fb=$el("com-filter-bar-wrap");
+      if(fb&&globalComs.length){
+        fb.innerHTML="";
+        var allB=ce("button",{className:"btn btn-sm "+(activeComFilter==null?"btn-primary":"btn-ghost")},"Tous");
+        allB.onclick=function(){activeComFilter=null;buildQuoteList();};fb.appendChild(allB);
+        globalComs.forEach(function(com){
+          var pts=(com.name||"").trim().split(" ");
+          var pfx=com.prefix&&com.prefix.trim()?com.prefix.trim():(((pts[0]||"")[0]||"").toUpperCase()+((pts[1]||"")[0]||"").toUpperCase());
+          var cnt=quotes.filter(function(q){return (q.selectedComs||[]).includes(com.id);}).length;
+          var b=ce("button",{className:"btn btn-sm btn-ghost"},pfx+" "+com.name+" ("+cnt+")");
+          (function(cid){b.onclick=function(){activeComFilter=(activeComFilter==cid)?null:cid;buildQuoteList();};})(com.id);
+          fb.appendChild(b);
+        });
+      }
+    },100);
   }catch(x){console.error(x);showSync("Mode hors ligne","err");loadLocal();render();}
 }
 
@@ -233,7 +255,7 @@ function buildList(){
 /* ===== LISTE DEVIS avec filtre commercial + recherche ===== */
 function buildComFilterBar(){
   // Barre de filtres par commercial - construite dynamiquement
-  var row2=ce("div",{className:"com-filter-bar"});
+  var row2=ce("div",{className:"com-filter-bar",id:"com-filter-bar-wrap"});
   row2.appendChild(ce("span",{style:{fontSize:"11px",color:"#9ca3af",fontWeight:"600"}},"Commercial :"));
   var allBtn=ce("button",{className:"btn btn-sm "+(activeComFilter==null?"btn-primary":"btn-ghost")},"Tous");
   allBtn.onclick=function(){activeComFilter=null;buildQuoteList();};
@@ -248,8 +270,6 @@ function buildComFilterBar(){
       (function(cid){b2.onclick=function(){activeComFilter=(activeComFilter==cid)?null:cid;buildQuoteList();};})(com.id);
       row2.appendChild(b2);
     });
-  }else{
-    row2.appendChild(ce("span",{style:{fontSize:"11px",color:"#d1d5db",fontStyle:"italic"}},"Configurez vos commerciaux dans Parametres"));
   }
   return row2;
 }

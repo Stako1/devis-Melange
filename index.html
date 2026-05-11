@@ -240,9 +240,8 @@ function buildQuoteList(){
   var si=ce("input",{type:"text",id:"q-search",placeholder:"N\u00b0, client, t\u00e9l\u00e9phone...",style:{border:"1px solid #d1d5db",borderRadius:"6px",padding:"7px 12px",fontSize:"13px",flex:"1",minWidth:"150px",maxWidth:"280px"}});
   si.oninput=function(){fillQuoteList(si.value.toLowerCase());};
   row1.appendChild(si);hdr.appendChild(row1);
-  // Ligne 2: filtres par commercial
-  if(globalComs.length){
-    var row2=ce("div",{className:"com-filter-bar"});
+  // Ligne 2: filtres par commercial - toujours visible
+  var row2=ce("div",{className:"com-filter-bar"});
     row2.appendChild(ce("span",{style:{fontSize:"11px",color:"#9ca3af",fontWeight:"600"}},"Commercial :"));
     var allBtn=ce("button",{className:"btn btn-sm "+(activeComFilter==null?"btn-primary":"btn-ghost")},"Tous");
     allBtn.onclick=function(){activeComFilter=null;buildQuoteList();};
@@ -256,8 +255,7 @@ function buildQuoteList(){
       (function(cid){b2.onclick=function(){activeComFilter=(activeComFilter==cid)?null:cid;buildQuoteList();};})(com.id);
       row2.appendChild(b2);
     });
-    hdr.appendChild(row2);
-  }
+  hdr.appendChild(row2);
   mc.appendChild(hdr);
   mc.appendChild(ce("div",{id:"q-list"}));
   fillQuoteList("");
